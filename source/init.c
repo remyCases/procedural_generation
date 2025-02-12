@@ -10,6 +10,12 @@ static int init_data(int height, int width, data_t* data)
     data->window_height = height;
     data->window_width = width;
 
+    data->window_data.zoom = 1.0f;
+    data->window_data.offset[0] = 0.0f;
+    data->window_data.offset[1] = 0.0f;
+    data->window_data.last_x = 0.0;
+    data->window_data.last_y = 0.0;
+    data->window_data.is_dragging = 0;
     data->window_data.width = &data->window_width;
     data->window_data.height = &data->window_height;
 }
@@ -79,6 +85,9 @@ static int init_window(GLFWwindow** p_window, window_data_t* window_data)
     // Set the viewport and resize callback
     glViewport(0, 0, (float)*window_data->width, (float)*window_data->height);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+    glfwSetCursorPosCallback(window, cursor_position_callback);
 
     return 0;
 }

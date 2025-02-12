@@ -15,6 +15,11 @@ struct window_data_s
 {
     int* width;
     int* height;
+    float zoom;
+    float offset[2];
+    double last_x;
+    double last_y;
+    int is_dragging;
 };
 
 struct data_s

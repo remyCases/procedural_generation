@@ -11,5 +11,8 @@
 
 void framebuffer_size_callback(GLFWwindow*, int, int);
 void error_callback(int, const char*);
+void scroll_callback(GLFWwindow*, double, double);
+void mouse_button_callback(GLFWwindow*, int, int, int);
+void cursor_position_callback(GLFWwindow*, double, double);
 
 #endif /* !CALLBACKS_H_ */
