@@ -69,6 +69,7 @@ static int init_window(GLFWwindow** p_window, state_t* state)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
     // Create window
     GLFWwindow* window = glfwCreateWindow(state->width, state->height, "Mandelbrot Set", NULL, NULL);
@@ -100,6 +101,9 @@ static int init_window(GLFWwindow** p_window, state_t* state)
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
 
+    // enable MSAA
+    glEnable(GL_MULTISAMPLE); 
+    
     return last_status;
 }
 
