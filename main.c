@@ -18,7 +18,7 @@
 #define HEIGHT 600
 
 int parse_args(int, char**, const char**);
-int display(GLFWwindow*, GLuint*, GLuint*, window_data_t*);
+int display(GLFWwindow*, GLuint*, GLuint*, state_t*);
 
 int parse_args(int argc, char** argv, const char** fragment_shader_path)
 {
@@ -34,7 +34,7 @@ int parse_args(int argc, char** argv, const char** fragment_shader_path)
     return last_status;
 }
 
-int display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, window_data_t* window_data)
+int display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, state_t* state)
 {
     int last_status = PG_SUCCESS;
     // Clear screen
@@ -57,10 +57,10 @@ int display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, window_data
     glUseProgram(*shader_program);
 
     // Update resolution uniform
-    glUniform2f(resolution_loc, (float)*window_data->width, (float)*window_data->height);
+    glUniform2f(resolution_loc, (float)state->width, (float)state->height);
     glUniform1f(time_loc, glfwGetTime());
-    glUniform1f(zoom_loc, window_data->zoom);
-    glUniform2f(offset_loc, window_data->offset[0], window_data->offset[1]);
+    glUniform1f(zoom_loc, state->zoom);
+    glUniform2f(offset_loc, state->offset[0], state->offset[1]);
 
     // Draw fullscreen quad
     glBindVertexArray(*VAO);
@@ -76,9 +76,6 @@ int display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, window_data
 int main(int argc, char** argv) 
 {
     int last_status = PG_SUCCESS;
-
-    UNREFERENCED_PARAMETER(argc);
-    UNREFERENCED_PARAMETER(argv);
 
     glfwSetErrorCallback(error_callback);
 
@@ -96,7 +93,7 @@ int main(int argc, char** argv)
     // main
     while (!glfwWindowShouldClose(data.window)) 
     {
-        CHECK_CALL_GOTO_ERROR(display, cleanup, data.window, &data.shader_program, &data.vao, &data.window_data);
+        CHECK_CALL_GOTO_ERROR(display, cleanup, data.window, &data.shader_program, &data.vao, &data.state);
     }
 
     // export

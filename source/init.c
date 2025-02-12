@@ -12,14 +12,14 @@ static int init_data(int height, int width, data_t* data)
     data->window_height = height;
     data->window_width = width;
 
-    data->window_data.zoom = 1.0f;
-    data->window_data.offset[0] = 0.0f;
-    data->window_data.offset[1] = 0.0f;
-    data->window_data.last_x = 0.0;
-    data->window_data.last_y = 0.0;
-    data->window_data.is_dragging = 0;
-    data->window_data.width = &data->window_width;
-    data->window_data.height = &data->window_height;
+    data->state.zoom = 1.0f;
+    data->state.offset[0] = 0.0f;
+    data->state.offset[1] = 0.0f;
+    data->state.last_x = 0.0;
+    data->state.last_y = 0.0;
+    data->state.is_dragging = 0;
+    data->state.width = data->window_width;
+    data->state.height = data->window_height;
 
     return last_status;
 }
@@ -51,7 +51,7 @@ static int init_vaovbo(GLuint* VAO, GLuint* VBO)
     return last_status;
 }
 
-static int init_window(GLFWwindow** p_window, window_data_t* window_data) 
+static int init_window(GLFWwindow** p_window, state_t* state) 
 {
     int last_status = PG_SUCCESS;
 
@@ -70,14 +70,14 @@ static int init_window(GLFWwindow** p_window, window_data_t* window_data)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     // Create window
-    GLFWwindow* window = glfwCreateWindow(*window_data->width, *window_data->height, "Mandelbrot Set", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(state->width, state->height, "Mandelbrot Set", NULL, NULL);
     if (!window)
     {
         fprintf(stderr, "Failed to create GLFW window\n");
         glfwTerminate();
         return PG_GLFW_WINDOW_ERROR;
     }
-    glfwSetWindowUserPointer(window, window_data);
+    glfwSetWindowUserPointer(window, state);
 
     glfwMakeContextCurrent(window);
 
@@ -93,7 +93,7 @@ static int init_window(GLFWwindow** p_window, window_data_t* window_data)
     *p_window = window;
 
     // Set the viewport and resize callback
-    glViewport(0, 0, (float)*window_data->width, (float)*window_data->height);
+    glViewport(0, 0, (float)state->width, (float)state->height);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -107,7 +107,7 @@ int init(int height, int width, data_t* data)
     int last_status = PG_SUCCESS;
 
     CHECK_CALL(init_data, height, width, data);
-    CHECK_CALL(init_window, &data->window, &data->window_data);
+    CHECK_CALL(init_window, &data->window, &data->state);
     CHECK_CALL(init_vaovbo, &data->vao, &data->vbo);
 
     return last_status;

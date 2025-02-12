@@ -8,18 +8,34 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-typedef struct window_data_s window_data_t;
+#define NK_INCLUDE_FIXED_TYPES
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_DEFAULT_ALLOCATOR
+#define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
+#define NK_INCLUDE_FONT_BAKING
+#define NK_IMPLEMENTATION
+#define NK_GLFW_GL3_IMPLEMENTATION
+
+#define MAX_VERTEX_BUFFER 512 * 1024
+#define MAX_ELEMENT_BUFFER 128 * 1024
+
+typedef struct state_s state_t;
 typedef struct data_s data_t;
 
-struct window_data_s 
+struct state_s 
 {
-    int* width;
-    int* height;
+    int width;
+    int height;
     float zoom;
     float offset[2];
     double last_x;
     double last_y;
     int is_dragging;
+
+    // Nuklear context
+    
+    // UI state
+    int show_glow;
 };
 
 struct data_s
@@ -30,7 +46,7 @@ struct data_s
     GLFWwindow* window;
     int window_width;
     int window_height;
-    window_data_t window_data;
+    state_t state;
 };
 
 #endif /* !STRUCTS_H_ */
