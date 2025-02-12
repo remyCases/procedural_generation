@@ -17,7 +17,22 @@
 #define WIDTH 800
 #define HEIGHT 600
 
+int parse_args(int, char**, const char**);
 int display(GLFWwindow*, GLuint*, GLuint*, window_data_t*);
+
+int parse_args(int argc, char** argv, const char** fragment_shader_path)
+{
+    int last_status = PG_SUCCESS;
+
+    if (argc > 1)
+    {
+        if (!strcmp(argv[1], "mandelbrot")) *fragment_shader_path = "shaders/fragment_mandelbrot.glsl";
+        else if (!strcmp(argv[1], "canopy")) *fragment_shader_path = "shaders/fragment_canopy.glsl";
+        else return PG_INVALID_PARAMETER;
+    }
+
+    return last_status;
+}
 
 int display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, window_data_t* window_data)
 {
@@ -72,12 +87,7 @@ int main(int argc, char** argv)
     CHECK_CALL(init, HEIGHT, WIDTH, &data);
 
     const char* fragment_shader_path = NULL;
-    if (argc > 1)
-    {
-        if (!strcmp(argv[1], "mandelbrot")) fragment_shader_path = "shaders/fragment_mandelbrot.glsl";
-        else if (!strcmp(argv[1], "canopy")) fragment_shader_path = "shaders/fragment_canopy.glsl";
-        else return -1;
-    }
+    CHECK_CALL_GOTO_ERROR(parse_args, cleanup, argc, argv, &fragment_shader_path);
 
     // Create and use shader program
     CHECK_CALL_GOTO_ERROR(create_shader_program, cleanup, &data.shader_program, fragment_shader_path)
