@@ -81,7 +81,7 @@ float get_adaptive_iterations(float zoom, vec2 uv)
     float BASE_ITER = 1000.0;
     float distance_from_center = length(uv);
     float zoom_factor = log(zoom + 1.0);
-    float distance_factor = exp(-distance_from_center);
+    float distance_factor = max(exp(-distance_from_center), 1.0);
     
     return BASE_ITER * (1.0 + zoom_factor * distance_factor);
 }
