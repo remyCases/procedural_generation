@@ -4,11 +4,23 @@ out vec4 FragColor;
 uniform vec2 resolution;
 uniform vec2 offset;
 uniform float zoom;
+uniform float time;
 
 //By Björn Ottosson
 //https://bottosson.github.io/posts/oklab
 //Shader functions adapted by "mattz"
 //https://www.shadertoy.com/view/WtccD7
+
+#define GAMMA 2.2
+//Classic gamma correction functions
+vec3 linear_from_srgb(vec3 rgb)
+{
+    return pow(rgb, vec3(GAMMA));
+}
+vec3 srgb_from_linear(vec3 lin)
+{
+    return pow(lin, vec3(1.0/GAMMA));
+}
 
 vec3 oklab_from_linear(vec3 linear)
 {
@@ -64,6 +76,16 @@ vec3 oklab_mix(vec3 lin1, vec3 lin2, float a)
     return kLMStoCONE*(lms*lms*lms);
 }
 
+float get_adaptive_iterations(float zoom, vec2 uv) 
+{
+    float BASE_ITER = 1000.0;
+    float distance_from_center = length(uv);
+    float zoom_factor = log(zoom + 1.0);
+    float distance_factor = exp(-distance_from_center);
+    
+    return BASE_ITER * (1.0 + zoom_factor * distance_factor);
+}
+
 vec3 get_color(vec2 z, float iter, float max_iter) 
 {
     if(iter == max_iter) return vec3(0.0);
@@ -74,10 +96,18 @@ vec3 get_color(vec2 z, float iter, float max_iter)
     float smoothed = iter + 1.0 - nu;
     float normalized = smoothed / max_iter;
     
-    vec3 color1 = vec3(0.0, 0.2, 0.2);
-    vec3 color2 = vec3(0.2, 0.3, 0.9);
+    //Pseudo random colors
+    vec3 rgb1 = cos(floor(time / 10.0)*vec3(4,7,8))*+.5+.5;
+    vec3 rgb2 = cos(round(time / 10.0)*vec3(4,7,8))*-.5+.5;
 
-    return oklab_mix(color1, color2, normalized);
+    vec3 lin1 = vec3(0.0, 0.2, 0.2);
+    vec3 lin2 = vec3(1.0, 0.3, 0.9);
+    
+    //Convert to linear color space
+    lin1 = linear_from_srgb(rgb1);
+    lin2 = linear_from_srgb(rgb2);
+
+    return srgb_from_linear(oklab_mix(lin1, lin2, normalized));
 }
 
 vec3 fractal(vec2 uv, float max_iter)
@@ -107,12 +137,12 @@ vec3 fractal(vec2 uv, float max_iter)
 
 void main() 
 {
-    const float MAX_ITER = 1000.0;
 
     vec2 uv = (gl_FragCoord.xy / resolution.xy) * 4.0 - vec2(2.0);
     uv.x *= resolution.x / resolution.y;
     uv = uv / zoom + offset;  // Apply zoom and pan
 
+    float MAX_ITER = get_adaptive_iterations(zoom, uv);
     vec3 color = fractal(uv, MAX_ITER);
        
     FragColor = vec4(color, 1.0);
