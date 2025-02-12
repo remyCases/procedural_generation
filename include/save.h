@@ -11,6 +11,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include "structs.h"
+#include "error.h"
 
 int save_png(const char*, data_t*);
 

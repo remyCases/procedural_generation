@@ -5,10 +5,11 @@
 #ifndef INIT_H_
 #define INIT_H_
 
-#include "structs.h"
 #include <stdio.h>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include "structs.h"
+#include "error.h"
 
 int init(int, int, data_t*);
 

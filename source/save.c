@@ -60,6 +60,8 @@ static int save_png_libpng(const char* filename, uint8_t *pixels, int w, int h)
 
 int save_png(const char* filename, data_t* data)
 {
+    int last_status = PG_SUCCESS;
+
     int w = *data->window_data.width;
     int h = *data->window_data.height;
     uint8_t* pixels = (uint8_t*)malloc(sizeof(uint8_t)*(w * h * 3));
@@ -70,5 +72,7 @@ int save_png(const char* filename, data_t* data)
     glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)pixels);
 
     // save the image
-    save_png_libpng(filename, pixels, w, h);
+    CHECK_CALL(save_png_libpng, filename, pixels, w, h);
+
+    return last_status;
 }

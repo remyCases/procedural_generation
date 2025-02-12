@@ -12,14 +12,16 @@
 #include "include/structs.h"
 #include "include/save.h"
 #include "include/init.h"
+#include "include/error.h"
 
 #define WIDTH 800
 #define HEIGHT 600
 
-void display(GLFWwindow*, GLuint*, GLuint*, window_data_t*);
+int display(GLFWwindow*, GLuint*, GLuint*, window_data_t*);
 
-void display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, window_data_t* window_data)
+int display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, window_data_t* window_data)
 {
+    int last_status = PG_SUCCESS;
     // Clear screen
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -52,10 +54,14 @@ void display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, window_dat
     // Swap buffers and poll events
     glfwSwapBuffers(window);
     glfwPollEvents();
+
+    return last_status;
 }
 
 int main(int argc, char** argv) 
 {
+    int last_status = PG_SUCCESS;
+
     UNREFERENCED_PARAMETER(argc);
     UNREFERENCED_PARAMETER(argv);
 
@@ -63,7 +69,7 @@ int main(int argc, char** argv)
 
     // init data
     data_t data = { 0 };
-    init(HEIGHT, WIDTH, &data);
+    CHECK_CALL(init, HEIGHT, WIDTH, &data);
 
     const char* fragment_shader_path = NULL;
     if (argc > 1)
@@ -74,26 +80,24 @@ int main(int argc, char** argv)
     }
 
     // Create and use shader program
-    if (create_shader_program(&data.shader_program, fragment_shader_path) == -1)
-    {
-        return -1;
-    }
+    CHECK_CALL_GOTO_ERROR(create_shader_program, cleanup, &data.shader_program, fragment_shader_path)
 
     printf("[>] Initialization done.\n");
     // main
     while (!glfwWindowShouldClose(data.window)) 
     {
-        display(data.window, &data.shader_program, &data.vao, &data.window_data);
+        CHECK_CALL_GOTO_ERROR(display, cleanup, data.window, &data.shader_program, &data.vao, &data.window_data);
     }
 
     // export
-    save_png("export/fractal.png", &data);
+    CHECK_CALL_GOTO_ERROR(save_png, cleanup, "export/fractal.png", &data);
 
     // Cleanup
+    cleanup:
     glDeleteVertexArrays(1, &data.vao);
     glDeleteBuffers(1, &data.vbo);
     glDeleteProgram(data.shader_program);
     
     glfwTerminate();
-    return 0;
+    return last_status;
 }

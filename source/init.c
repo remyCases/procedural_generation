@@ -7,6 +7,8 @@
 
 static int init_data(int height, int width, data_t* data)
 {
+    int last_status = PG_SUCCESS;
+
     data->window_height = height;
     data->window_width = width;
 
@@ -18,10 +20,14 @@ static int init_data(int height, int width, data_t* data)
     data->window_data.is_dragging = 0;
     data->window_data.width = &data->window_width;
     data->window_data.height = &data->window_height;
+
+    return last_status;
 }
 
 static int init_vaovbo(GLuint* VAO, GLuint* VBO) 
 {
+    int last_status = PG_SUCCESS;
+
     // Vertex data for fullscreen quad
     float vertices[] = 
     {
@@ -41,15 +47,19 @@ static int init_vaovbo(GLuint* VAO, GLuint* VBO)
     
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    return last_status;
 }
 
 static int init_window(GLFWwindow** p_window, window_data_t* window_data) 
 {
+    int last_status = PG_SUCCESS;
+
     // Initialize GLFW
     if (!glfwInit())
     {
         fprintf(stderr, "Failed to initialize GLFW\n");
-        return -1;
+        return PG_INITIALIZATION_ERROR;
     }
     // for debug purpose
     printf("[>] GLFW Version: %s\n", glfwGetVersionString());
@@ -65,7 +75,7 @@ static int init_window(GLFWwindow** p_window, window_data_t* window_data)
     {
         fprintf(stderr, "Failed to create GLFW window\n");
         glfwTerminate();
-        return -1;
+        return PG_GLFW_WINDOW_ERROR;
     }
     glfwSetWindowUserPointer(window, window_data);
 
@@ -77,7 +87,7 @@ static int init_window(GLFWwindow** p_window, window_data_t* window_data)
     {
         fprintf(stderr, "GLEW initialization failed: %s\n", glewGetErrorString(err));
         glfwTerminate();
-        return -1;
+        return PG_INITIALIZATION_ERROR;
     }
 
     *p_window = window;
@@ -89,12 +99,16 @@ static int init_window(GLFWwindow** p_window, window_data_t* window_data)
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetCursorPosCallback(window, cursor_position_callback);
 
-    return 0;
+    return last_status;
 }
 
 int init(int height, int width, data_t* data)
 {
-    init_data(height, width, data);
-    init_window(&data->window, &data->window_data);
-    init_vaovbo(&data->vao, &data->vbo);
+    int last_status = PG_SUCCESS;
+
+    CHECK_CALL(init_data, height, width, data);
+    CHECK_CALL(init_window, &data->window, &data->window_data);
+    CHECK_CALL(init_vaovbo, &data->vao, &data->vbo);
+
+    return last_status;
 }
