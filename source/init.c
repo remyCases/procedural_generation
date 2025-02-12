@@ -20,6 +20,7 @@ static int init_data(int height, int width, data_t* data)
     data->state.is_dragging = 0;
     data->state.width = data->window_width;
     data->state.height = data->window_height;
+    data->state.show_glow = 0;
 
     return last_status;
 }

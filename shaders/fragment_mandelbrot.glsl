@@ -5,6 +5,7 @@ uniform vec2 resolution;
 uniform vec2 offset;
 uniform float zoom;
 uniform float time;
+uniform bool show_glow;
 
 //By Björn Ottosson
 //https://bottosson.github.io/posts/oklab
@@ -124,6 +125,12 @@ vec3 get_color_and_glow(vec2 z, float de, float iter, float max_iter)
 
     // Combine all glow layers
     vec3 col = base_color_oklab;
+
+    if (!show_glow) 
+    {
+        return col;
+    }
+    
     col = mix(col, outer_color, outer_glow * 0.8);
     col = mix(col, mid_color, mid_glow * 0.6);
     col = mix(col, inner_color, inner_glow * 0.4);

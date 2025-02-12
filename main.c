@@ -46,6 +46,7 @@ int display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, state_t* st
     GLint time_loc = glGetUniformLocation(*shader_program, "time");
     GLint zoom_loc = glGetUniformLocation(*shader_program, "zoom");
     GLint offset_loc = glGetUniformLocation(*shader_program, "offset");
+    GLint glow_loc = glGetUniformLocation(*shader_program, "show_glow");
     glUniform1f(glGetUniformLocation(*shader_program, "thickness"), 0.005);
     glUniform1f(glGetUniformLocation(*shader_program, "branch_angle"), M_PI/6);
     glUniform1f(glGetUniformLocation(*shader_program, "branch_length"), 0.5);
@@ -61,6 +62,7 @@ int display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, state_t* st
     glUniform1f(time_loc, glfwGetTime());
     glUniform1f(zoom_loc, state->zoom);
     glUniform2f(offset_loc, state->offset[0], state->offset[1]);
+    glUniform1f(glow_loc, state->show_glow);
 
     // Draw fullscreen quad
     glBindVertexArray(*VAO);
