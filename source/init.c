@@ -25,7 +25,7 @@ static int init_data(int height, int width, data_t* data)
     return last_status;
 }
 
-static int init_vaovbo(GLuint* VAO, GLuint* VBO) 
+static int init_vaovbo_generation(GLuint* VAO, GLuint* VBO) 
 {
     int last_status = PG_SUCCESS;
 
@@ -48,6 +48,34 @@ static int init_vaovbo(GLuint* VAO, GLuint* VBO)
     
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+
+    return last_status;
+}
+
+static int init_vaovbo_image(GLuint* VAO, GLuint* VBO) 
+{
+    int last_status = PG_SUCCESS;
+
+    // Vertex data for fullscreen quad
+    float vertices[] = 
+    {
+        // positions          // colors           // texture coords
+        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
+        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+    };
+
+    // Create and bind VAO and VBO
+    glGenVertexArrays(1, VAO);
+    glGenBuffers(1, VBO);
+    
+    glBindVertexArray(*VAO);
+    glBindBuffer(GL_ARRAY_BUFFER, *VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2); 
 
     return last_status;
 }
@@ -103,7 +131,7 @@ static int init_window(GLFWwindow** p_window, state_t* state)
 
     // enable MSAA
     glEnable(GL_MULTISAMPLE); 
-    
+
     return last_status;
 }
 

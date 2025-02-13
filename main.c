@@ -13,6 +13,7 @@
 #include "include/save.h"
 #include "include/init.h"
 #include "include/error.h"
+#include "stb/include/stb_image.h"
 
 #define WIDTH 800
 #define HEIGHT 600
@@ -28,6 +29,31 @@ int parse_args(int argc, char** argv, const char** fragment_shader_path)
     {
         if (!strcmp(argv[1], "mandelbrot")) *fragment_shader_path = "shaders/fragment_mandelbrot.glsl";
         else if (!strcmp(argv[1], "canopy")) *fragment_shader_path = "shaders/fragment_canopy.glsl";
+        else if (!strcmp(argv[1], "file") && argc > 2)
+        {
+            GLuint texture;
+            int w;
+            int h;
+            int n_channels;
+            unsigned char* image = stbi_load(argv[2], &w, &h, &n_channels, STBI_rgb);
+
+            if(!image) return PG_EXTERNAL_ERROR;
+
+            glGenTextures(1, &texture);
+
+            glBindTexture(GL_TEXTURE_2D, texture);
+
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+            glGenerateMipmap(GL_TEXTURE_2D);
+            stbi_image_free(image);
+
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            *fragment_shader_path = "shaders/fragment_postprocessing.glsl";
+        }
         else return PG_INVALID_PARAMETER;
     }
 
@@ -81,12 +107,13 @@ int main(int argc, char** argv)
 
     glfwSetErrorCallback(error_callback);
 
+    const char* fragment_shader_path = NULL;
+    CHECK_CALL_GOTO_ERROR(parse_args, cleanup, argc, argv, &fragment_shader_path);
+    
     // init data
     data_t data = { 0 };
     CHECK_CALL(init, HEIGHT, WIDTH, &data);
 
-    const char* fragment_shader_path = NULL;
-    CHECK_CALL_GOTO_ERROR(parse_args, cleanup, argc, argv, &fragment_shader_path);
 
     // Create and use shader program
     CHECK_CALL_GOTO_ERROR(create_shader_program, cleanup, &data.shader_program, fragment_shader_path)

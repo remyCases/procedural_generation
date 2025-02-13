@@ -57,12 +57,16 @@ find_package(png REQUIRED)
 
 file(GLOB MAIN_SRCS
     "main.c"
+	"stb/include/*.h"
+	"stb/source/*.c"
 	"include/*.h"
     "source/*.c"
 )
 
 file(GLOB TEST_SRCS
     "test.c"
+	"stb/include/*.h"
+	"stb/source/*.c"
 	"include/*.h"
     "source/*.c"
 )

@@ -24,8 +24,17 @@
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
+typedef enum GENERATION_TYPE GENERATION_TYPE;
+
 typedef struct state_s state_t;
 typedef struct data_s data_t;
+
+enum GENERATION_TYPE
+{
+    PROCEDURAL,
+    IMAGE,
+    UNKNOWN,
+};
 
 struct state_s 
 {
@@ -43,6 +52,7 @@ struct state_s
 
 struct data_s
 {
+    GENERATION_TYPE generation_type; 
     GLuint vao;
     GLuint vbo;
     GLuint shader_program;
