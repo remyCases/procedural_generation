@@ -27,6 +27,7 @@
 typedef enum GENERATION_TYPE GENERATION_TYPE;
 typedef enum PROCEDURAL_TYPE PROCEDURAL_TYPE;
 
+typedef struct image_s image_t;
 typedef struct state_s state_t;
 typedef struct data_s data_t;
 
@@ -40,6 +41,14 @@ enum PROCEDURAL_TYPE
 {
     MANDELBROT,
     CANOPY,
+};
+
+struct image_s
+{
+    unsigned char* buf;
+    int width;
+    int height;
+    GLenum format;
 };
 
 struct state_s 
@@ -66,8 +75,6 @@ struct data_s
     GLuint shader_program;
     GLuint texture;
     GLFWwindow* window;
-    int window_width;
-    int window_height;
     state_t state;
 };
 

@@ -9,17 +9,14 @@ static int init_data(int height, int width, data_t* data)
 {
     int last_status = PG_SUCCESS;
 
-    data->window_height = height;
-    data->window_width = width;
-
     data->state.zoom = 1.0f;
     data->state.offset[0] = 0.0f;
     data->state.offset[1] = 0.0f;
     data->state.last_x = 0.0;
     data->state.last_y = 0.0;
     data->state.is_dragging = 0;
-    data->state.width = data->window_width;
-    data->state.height = data->window_height;
+    data->state.width = width;
+    data->state.height = height;
     data->state.show_glow = 0;
 
     return last_status;
@@ -104,7 +101,35 @@ static int init_vaovbo_image(GLuint* VAO, GLuint* VBO, GLuint* EBO)
     return last_status;
 }
 
-static int init_image(const char* path, GLuint* p_texture)
+static int load_image(const char* path, image_t* image, state_t* state)
+{
+    int last_status = PG_SUCCESS;
+
+    int w;
+    int h;
+    int n_channels;
+    stbi_set_flip_vertically_on_load(1);
+    unsigned char* buf = stbi_load(path, &w, &h, &n_channels, 0);
+
+    if(!buf) return PG_EXTERNAL_ERROR;
+
+    printf("[>] Image loaded successfully: %dx%d with %d channels\n", w, h, n_channels);
+
+    // If your image has an alpha channel (4 channels), use GL_RGBA instead of GL_RGB
+    GLenum format = (n_channels == 4) ? GL_RGBA : GL_RGB;
+
+    image->buf = buf;
+    image->width = w;
+    image->height = h;
+    image->format = format;
+
+    state->height = image->height;
+    state->width = image->width;
+
+    return last_status;
+}
+
+static int init_texture(GLuint* p_texture, image_t* image)
 {
     int last_status = PG_SUCCESS;
 
@@ -118,21 +143,9 @@ static int init_image(const char* path, GLuint* p_texture)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    int w;
-    int h;
-    int n_channels;
-    stbi_set_flip_vertically_on_load(1);
-    unsigned char* image = stbi_load(path, &w, &h, &n_channels, 0);
-
-    if(!image) return PG_EXTERNAL_ERROR;
-
-    printf("[>] Image loaded successfully: %dx%d with %d channels\n", w, h, n_channels);
-    // If your image has an alpha channel (4 channels), use GL_RGBA instead of GL_RGB
-    GLenum format = (n_channels == 4) ? GL_RGBA : GL_RGB;
-
-    glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, format, GL_UNSIGNED_BYTE, image);
+    glTexImage2D(GL_TEXTURE_2D, 0, image->format, image->width, image->height, 0, image->format, GL_UNSIGNED_BYTE, image->buf);
     glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(image);
+    stbi_image_free(image->buf);
 
     GLenum error = glGetError();
     if (error != GL_NO_ERROR) 
@@ -178,8 +191,29 @@ static int init_window(GLFWwindow** p_window, state_t* state)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
+    // Check given dimension regarding the primary monitor
+    GLFWmonitor* primary_monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode* mode = glfwGetVideoMode(primary_monitor);
+
+    // Calculate window size (scale down if larger than screen)
+    int window_width = state->width;
+    int window_height = state->height;
+    float scale = 1.0f;
+
+    // If window is larger than screen, scale it down while maintaining aspect ratio
+    if (state->width > mode->width || state->height > mode->height) 
+    {
+        float scale_x = (float)mode->width / state->width;
+        float scale_y = (float)mode->height / state->height;
+        scale = (scale_x < scale_y) ? scale_x : scale_y;
+        scale *= 0.9f; // Leave some margin
+
+        window_width = (int)(state->width * scale);
+        window_height = (int)(state->height * scale);
+    }
+
     // Create window
-    GLFWwindow* window = glfwCreateWindow(state->width, state->height, "Mandelbrot Set", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(window_width, window_height, "Mandelbrot Set", NULL, NULL);
     if (!window)
     {
         fprintf(stderr, "Failed to create GLFW window\n");
@@ -218,7 +252,23 @@ int init(int height, int width, data_t* data)
 {
     int last_status = PG_SUCCESS;
 
+    image_t image = { 0 };
     CHECK_CALL(init_data, height, width, data);
+
+    switch (data->flag & 1)
+    {
+    case PROCEDURAL:
+        break;
+
+    case IMAGE:
+        CHECK_CALL(load_image, data->path, &image, &data->state);
+        break;
+    
+    default:
+        return PG_INVALID_PARAMETER;
+        break;
+    }
+    
     CHECK_CALL(init_window, &data->window, &data->state);
 
     switch (data->flag & 1)
@@ -228,7 +278,7 @@ int init(int height, int width, data_t* data)
         break;
 
     case IMAGE:
-        CHECK_CALL(init_image, data->path, &data->texture);
+        CHECK_CALL(init_texture,  &data->texture, &image);
         CHECK_CALL(init_vaovbo_image, &data->vao, &data->vbo, &data->ebo);
         break;
     
