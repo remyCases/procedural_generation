@@ -52,30 +52,109 @@ static int init_vaovbo_generation(GLuint* VAO, GLuint* VBO)
     return last_status;
 }
 
-static int init_vaovbo_image(GLuint* VAO, GLuint* VBO) 
+static int init_vaovbo_image(GLuint* VAO, GLuint* VBO, GLuint* EBO) 
 {
     int last_status = PG_SUCCESS;
 
     // Vertex data for fullscreen quad
     float vertices[] = 
     {
-        // positions          // colors           // texture coords
-        0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-        0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left 
+        // positions          // texture coords
+         1.0f,  1.0f, 0.0f,  1.0f, 1.0f,   // top right
+         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,   // bottom right
+        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,   // bottom left
+        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f    // top left
     };
+
+    unsigned int indices[] = 
+    {
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
+    };
+
+    // Clear any existing vertex attribute bindings
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // Create and bind VAO and VBO
     glGenVertexArrays(1, VAO);
-    glGenBuffers(1, VBO);
-    
     glBindVertexArray(*VAO);
+    
+    glGenBuffers(1, VBO);
     glBindBuffer(GL_ARRAY_BUFFER, *VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, EBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2); 
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    GLint vertex_attrib_enabled = 0;
+    GLint tex_coord_attrib_enabled = 0;
+    glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &vertex_attrib_enabled);
+    glGetVertexAttribiv(1, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &tex_coord_attrib_enabled);
+    PRINT("Position attribute enabled: %d\n", vertex_attrib_enabled);
+    PRINT("TexCoord attribute enabled: %d\n", tex_coord_attrib_enabled);
+
+    return last_status;
+}
+
+static int init_image(const char* path, GLuint* p_texture)
+{
+    int last_status = PG_SUCCESS;
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    
+    // Set texture parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    int w;
+    int h;
+    int n_channels;
+    stbi_set_flip_vertically_on_load(1);
+    unsigned char* image = stbi_load(path, &w, &h, &n_channels, 0);
+
+    if(!image) return PG_EXTERNAL_ERROR;
+
+    printf("[>] Image loaded successfully: %dx%d with %d channels\n", w, h, n_channels);
+    // If your image has an alpha channel (4 channels), use GL_RGBA instead of GL_RGB
+    GLenum format = (n_channels == 4) ? GL_RGBA : GL_RGB;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, format, w, h, 0, format, GL_UNSIGNED_BYTE, image);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(image);
+
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR) 
+    {
+        fprintf(stderr, "OpenGL error after texture creation: 0x%x\n", error);
+        return PG_INITIALIZATION_ERROR;
+    }
+
+    GLint width_check = 0;
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width_check);
+    PRINT("Texture dimensions in OpenGL: %d\n", width_check);
+
+    // And check the texture binding
+    GLint current_texture = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &current_texture);
+    PRINT("Currently bound texture: %u\n", current_texture);
+
+    GLint mipmap_level = 0;
+    glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &mipmap_level);
+    PRINT("Mipmap level: %d\n", mipmap_level);
+
+    *p_texture = texture;
 
     return last_status;
 }
@@ -141,7 +220,23 @@ int init(int height, int width, data_t* data)
 
     CHECK_CALL(init_data, height, width, data);
     CHECK_CALL(init_window, &data->window, &data->state);
-    CHECK_CALL(init_vaovbo, &data->vao, &data->vbo);
+
+    switch (data->flag & 1)
+    {
+    case PROCEDURAL:
+        CHECK_CALL(init_vaovbo_generation, &data->vao, &data->vbo);
+        break;
+
+    case IMAGE:
+        CHECK_CALL(init_image, data->path, &data->texture);
+        CHECK_CALL(init_vaovbo_image, &data->vao, &data->vbo, &data->ebo);
+        break;
+    
+    default:
+        return PG_INVALID_PARAMETER;
+        break;
+    }
+    
 
     return last_status;
 }

@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 #include "structs.h"
 #include "error.h"
+#include "../stb/include/stb_image.h"
 
 int init(int, int, data_t*);
 

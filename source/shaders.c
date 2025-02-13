@@ -4,7 +4,46 @@
 
 #include "../include/shaders.h"
 
-static int read_shader_file(const char* file_path, char** buf) 
+static int choose_shaders_path(data_t* data, const char** vertex_path, const char** fragment_path)
+{
+    int last_status = PG_SUCCESS;
+    int type = data->flag & 1;
+    int procedural = data->flag >> 1;
+
+    switch (type)
+    {
+    case PROCEDURAL:
+        switch(procedural)
+        {
+            case MANDELBROT:
+                *fragment_path = "shaders/fragment_mandelbrot.glsl";
+                break;
+
+            case CANOPY:
+                *fragment_path = "shaders/fragment_canopy.glsl";
+                break;
+
+            default:
+                return PG_INVALID_PARAMETER;
+                break;
+        }
+        *vertex_path = "shaders/vertex.glsl";
+        break;
+    
+    case IMAGE:
+        *fragment_path = "shaders/fragment_postprocessing.glsl";
+        *vertex_path = "shaders/vertex_postprocessing.glsl";
+        break;
+
+    default:
+        return PG_INVALID_PARAMETER;
+        break;
+    }
+
+    return last_status;
+}
+
+static int read_shader_file(const char* file_path, const GLchar** buf) 
 {
     FILE* file = fopen(file_path, "rb");
     if (!file) 
@@ -45,46 +84,49 @@ static int read_shader_file(const char* file_path, char** buf)
     return PG_SUCCESS;
 }
 
-int create_shader_program(GLuint* p_shader_program, const char* fragment_shader_path) 
+static int create_shader(const char* shader_path, int shader_type, GLuint* p_shader)
 {
     int last_status = PG_SUCCESS;
     GLint success;
     GLchar info_log[512];
 
-    char* vertex_shader_source = NULL;
-    CHECK_CALL(read_shader_file, "shaders/vertex.glsl", &vertex_shader_source);
+    const GLchar* shader_source = NULL;
+    CHECK_CALL(read_shader_file, shader_path, &shader_source);
 
-    // Compile vertex shader
-    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex_shader, 1, &vertex_shader_source, NULL);
-    glCompileShader(vertex_shader);
+    // Compile shader
+    GLuint shader = glCreateShader(shader_type);
+    glShaderSource(shader, 1, &shader_source, NULL);
+    glCompileShader(shader);
 
     // Error checking
-    glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) 
     {
-        glGetShaderInfoLog(vertex_shader, sizeof(info_log), NULL, info_log);
-        fprintf(stderr, "vertex_shader compilation failed: %s\n", info_log);
+        glGetShaderInfoLog(shader, sizeof(info_log), NULL, info_log);
+        fprintf(stderr, "shader compilation failed: %s\n", info_log);
         return last_status;
     }
 
-    char* fragment_shader_source = NULL;
-    CHECK_CALL(read_shader_file, fragment_shader_path, &fragment_shader_source);
+    *p_shader = shader;
 
-    // Compile fragment shader
-    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment_shader, 1, &fragment_shader_source, NULL);
-    glCompileShader(fragment_shader);
+    return last_status;
+}
 
-    // Error checking
-    glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
-    if (!success) 
-    {
-        glGetShaderInfoLog(fragment_shader, sizeof(info_log), NULL, info_log);
-        fprintf(stderr, "fragment_shader compilation failed: %s\n", info_log);
-        return last_status;
-    }
+int create_shader_program(data_t* data) 
+{
+    int last_status = PG_SUCCESS;
+    GLint success;
+    GLchar info_log[512];
 
+    const char* vertex_shader_path = NULL;
+    const char* fragment_shader_path = NULL;
+    CHECK_CALL(choose_shaders_path, data, &vertex_shader_path, &fragment_shader_path);
+
+    GLuint vertex_shader;
+    GLuint fragment_shader;
+    CHECK_CALL(create_shader, vertex_shader_path, GL_VERTEX_SHADER, &vertex_shader);
+    CHECK_CALL(create_shader, fragment_shader_path, GL_FRAGMENT_SHADER, &fragment_shader);
+    
     // Create shader program
     GLuint shader_program = glCreateProgram();
     glAttachShader(shader_program, vertex_shader);
@@ -100,7 +142,16 @@ int create_shader_program(GLuint* p_shader_program, const char* fragment_shader_
         return PG_FAIL;
     }
 
-    *p_shader_program = shader_program;
+    // Add debug prints here
+    GLint pos_attrib = glGetAttribLocation(shader_program, "aPos");
+    GLint tex_attrib = glGetAttribLocation(shader_program, "aTexCoord");
+    PRINT("Position attribute location: %d\n", pos_attrib);
+    PRINT("TexCoord attribute location: %d\n", tex_attrib);
+
+    GLint tex_uniform = glGetUniformLocation(shader_program, "texture1");
+    PRINT("Texture uniform location: %d\n", tex_uniform);
+
+    data->shader_program = shader_program;
 
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);

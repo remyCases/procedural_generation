@@ -10,7 +10,8 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include "error.h"
+#include "structs.h"
 
-int create_shader_program(GLuint*, const char*);
+int create_shader_program(data_t*);
 
 #endif /* !SHADERS_H_ */

@@ -13,46 +13,31 @@
 #include "include/save.h"
 #include "include/init.h"
 #include "include/error.h"
-#include "stb/include/stb_image.h"
 
 #define WIDTH 800
 #define HEIGHT 600
 
-int parse_args(int, char**, const char**);
-int display(GLFWwindow*, GLuint*, GLuint*, state_t*);
+int parse_args(int, char**, data_t*);
+int display(GLFWwindow*, int, GLuint, GLuint, GLuint, state_t*);
 
-int parse_args(int argc, char** argv, const char** fragment_shader_path)
+int parse_args(int argc, char** argv, data_t* data)
 {
     int last_status = PG_SUCCESS;
 
     if (argc > 1)
     {
-        if (!strcmp(argv[1], "mandelbrot")) *fragment_shader_path = "shaders/fragment_mandelbrot.glsl";
-        else if (!strcmp(argv[1], "canopy")) *fragment_shader_path = "shaders/fragment_canopy.glsl";
+        if (!strcmp(argv[1], "mandelbrot"))
+        {
+            data->flag = PROCEDURAL | (MANDELBROT << 1);
+        }
+        else if (!strcmp(argv[1], "canopy")) 
+        {
+            data->flag = PROCEDURAL | (CANOPY << 1);
+        }
         else if (!strcmp(argv[1], "file") && argc > 2)
         {
-            GLuint texture;
-            int w;
-            int h;
-            int n_channels;
-            unsigned char* image = stbi_load(argv[2], &w, &h, &n_channels, STBI_rgb);
-
-            if(!image) return PG_EXTERNAL_ERROR;
-
-            glGenTextures(1, &texture);
-
-            glBindTexture(GL_TEXTURE_2D, texture);
-
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-            glGenerateMipmap(GL_TEXTURE_2D);
-            stbi_image_free(image);
-
-            glBindTexture(GL_TEXTURE_2D, 0);
-
-            *fragment_shader_path = "shaders/fragment_postprocessing.glsl";
+            data->flag = IMAGE;
+            data->path = argv[2];
         }
         else return PG_INVALID_PARAMETER;
     }
@@ -60,39 +45,57 @@ int parse_args(int argc, char** argv, const char** fragment_shader_path)
     return last_status;
 }
 
-int display(GLFWwindow* window, GLuint* shader_program, GLuint* VAO, state_t* state)
+int display(GLFWwindow* window, int type, GLuint shader_program, GLuint VAO, GLuint texture, state_t* state)
 {
     int last_status = PG_SUCCESS;
     // Clear screen
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Uniform locations
-    GLint resolution_loc = glGetUniformLocation(*shader_program, "resolution");
-    GLint time_loc = glGetUniformLocation(*shader_program, "time");
-    GLint zoom_loc = glGetUniformLocation(*shader_program, "zoom");
-    GLint offset_loc = glGetUniformLocation(*shader_program, "offset");
-    GLint glow_loc = glGetUniformLocation(*shader_program, "show_glow");
-    glUniform1f(glGetUniformLocation(*shader_program, "thickness"), 0.005);
-    glUniform1f(glGetUniformLocation(*shader_program, "branch_angle"), M_PI/6);
-    glUniform1f(glGetUniformLocation(*shader_program, "branch_length"), 0.5);
-    glUniform1f(glGetUniformLocation(*shader_program, "decay"), 0.5);
-    glUniform3f(glGetUniformLocation(*shader_program, "color1"), 0.0, 0.0, 0.0);
-    glUniform3f(glGetUniformLocation(*shader_program, "color2"), 0.5, 1.0, 0.7);
+    GLint resolution_loc = glGetUniformLocation(shader_program, "resolution");
+    GLint time_loc = glGetUniformLocation(shader_program, "time");
+    GLint zoom_loc = glGetUniformLocation(shader_program, "zoom");
+    GLint offset_loc = glGetUniformLocation(shader_program, "offset");
+    GLint glow_loc = glGetUniformLocation(shader_program, "show_glow");
 
     // Use shader program
-    glUseProgram(*shader_program);
+    glUseProgram(shader_program);
 
-    // Update resolution uniform
-    glUniform2f(resolution_loc, (float)state->width, (float)state->height);
-    glUniform1f(time_loc, glfwGetTime());
-    glUniform1f(zoom_loc, state->zoom);
-    glUniform2f(offset_loc, state->offset[0], state->offset[1]);
-    glUniform1f(glow_loc, state->show_glow);
+    switch(type)
+    {
+        case PROCEDURAL:
 
-    // Draw fullscreen quad
-    glBindVertexArray(*VAO);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            glUniform1f(glGetUniformLocation(shader_program, "thickness"), 0.005);
+            glUniform1f(glGetUniformLocation(shader_program, "branch_angle"), M_PI/6);
+            glUniform1f(glGetUniformLocation(shader_program, "branch_length"), 0.5);
+            glUniform1f(glGetUniformLocation(shader_program, "decay"), 0.5);
+            glUniform3f(glGetUniformLocation(shader_program, "color1"), 0.0, 0.0, 0.0);
+            glUniform3f(glGetUniformLocation(shader_program, "color2"), 0.5, 1.0, 0.7);
+            
+            glUniform2f(resolution_loc, (float)state->width, (float)state->height);
+            glUniform1f(time_loc, glfwGetTime());
+            glUniform1f(zoom_loc, state->zoom);
+            glUniform2f(offset_loc, state->offset[0], state->offset[1]);
+            glUniform1f(glow_loc, state->show_glow);
+
+            glBindVertexArray(VAO);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            break;
+
+        case IMAGE:
+
+            glUniform1i(glGetUniformLocation(shader_program, "texture1"), 0);
+
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture);
+            glBindVertexArray(VAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+            break;
+
+        default:
+            break;
+    }
 
     // Swap buffers and poll events
     glfwSwapBuffers(window);
@@ -106,23 +109,26 @@ int main(int argc, char** argv)
     int last_status = PG_SUCCESS;
 
     glfwSetErrorCallback(error_callback);
-
-    const char* fragment_shader_path = NULL;
-    CHECK_CALL_GOTO_ERROR(parse_args, cleanup, argc, argv, &fragment_shader_path);
     
     // init data
     data_t data = { 0 };
+    CHECK_CALL_GOTO_ERROR(parse_args, cleanup, argc, argv, &data);
     CHECK_CALL(init, HEIGHT, WIDTH, &data);
 
-
     // Create and use shader program
-    CHECK_CALL_GOTO_ERROR(create_shader_program, cleanup, &data.shader_program, fragment_shader_path)
+    CHECK_CALL_GOTO_ERROR(create_shader_program, cleanup, &data)
 
     printf("[>] Initialization done.\n");
     // main
     while (!glfwWindowShouldClose(data.window)) 
     {
-        CHECK_CALL_GOTO_ERROR(display, cleanup, data.window, &data.shader_program, &data.vao, &data.state);
+        CHECK_CALL_GOTO_ERROR(display, cleanup, 
+            data.window, 
+            data.flag & 1, 
+            data.shader_program, 
+            data.vao, 
+            data.texture,
+            &data.state);
     }
 
     // export
@@ -132,6 +138,7 @@ int main(int argc, char** argv)
     cleanup:
     glDeleteVertexArrays(1, &data.vao);
     glDeleteBuffers(1, &data.vbo);
+    glDeleteBuffers(1, &data.ebo);
     glDeleteProgram(data.shader_program);
     
     glfwTerminate();

@@ -25,6 +25,7 @@
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
 typedef enum GENERATION_TYPE GENERATION_TYPE;
+typedef enum PROCEDURAL_TYPE PROCEDURAL_TYPE;
 
 typedef struct state_s state_t;
 typedef struct data_s data_t;
@@ -33,7 +34,12 @@ enum GENERATION_TYPE
 {
     PROCEDURAL,
     IMAGE,
-    UNKNOWN,
+};
+
+enum PROCEDURAL_TYPE
+{
+    MANDELBROT,
+    CANOPY,
 };
 
 struct state_s 
@@ -52,10 +58,13 @@ struct state_s
 
 struct data_s
 {
-    GENERATION_TYPE generation_type; 
+    uint8_t flag;
+    const char* path;
     GLuint vao;
     GLuint vbo;
+    GLuint ebo;
     GLuint shader_program;
+    GLuint texture;
     GLFWwindow* window;
     int window_width;
     int window_height;
