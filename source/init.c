@@ -95,8 +95,8 @@ static int init_vaovbo_image(GLuint* VAO, GLuint* VBO, GLuint* EBO)
     GLint tex_coord_attrib_enabled = 0;
     glGetVertexAttribiv(0, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &vertex_attrib_enabled);
     glGetVertexAttribiv(1, GL_VERTEX_ATTRIB_ARRAY_ENABLED, &tex_coord_attrib_enabled);
-    PRINT("Position attribute enabled: %d\n", vertex_attrib_enabled);
-    PRINT("TexCoord attribute enabled: %d\n", tex_coord_attrib_enabled);
+    PRINT("Position attribute enabled: %d", vertex_attrib_enabled);
+    PRINT("TexCoord attribute enabled: %d", tex_coord_attrib_enabled);
 
     return last_status;
 }
@@ -156,16 +156,16 @@ static int init_texture(GLuint* p_texture, image_t* image)
 
     GLint width_check = 0;
     glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &width_check);
-    PRINT("Texture dimensions in OpenGL: %d\n", width_check);
+    PRINT("Texture dimensions in OpenGL: %d", width_check);
 
     // And check the texture binding
     GLint current_texture = 0;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &current_texture);
-    PRINT("Currently bound texture: %u\n", current_texture);
+    PRINT("Currently bound texture: %u", current_texture);
 
     GLint mipmap_level = 0;
     glGetTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, &mipmap_level);
-    PRINT("Mipmap level: %d\n", mipmap_level);
+    PRINT("Mipmap level: %d", mipmap_level);
 
     *p_texture = texture;
 

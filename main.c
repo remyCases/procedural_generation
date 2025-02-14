@@ -84,8 +84,12 @@ int display(GLFWwindow* window, int type, GLuint shader_program, GLuint VAO, GLu
             break;
 
         case IMAGE:
-
-            glUniform1i(glGetUniformLocation(shader_program, "texture1"), 0);
+            
+            glUniform1i(glGetUniformLocation(shader_program, "source_texture"), 0);
+            glUniform1i(glGetUniformLocation(shader_program, "dithering_pattern"), 0);
+            glUniform1f(glGetUniformLocation(shader_program, "dithering_strength"), 1.0);
+            glUniform1i(glGetUniformLocation(shader_program, "quantization_method"), 0);
+            glUniform1i(glGetUniformLocation(shader_program, "quantization_levels"), 8);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture);

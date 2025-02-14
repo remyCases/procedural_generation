@@ -18,7 +18,7 @@
 #define TO_ENUM(A, ...)                     A,
 #define TO_CASE_STR(A, ...)                 case A: return STR(A);
 #define TO_CASE_PRINT(A, F, NF, NL, ...)    CAT_UND(TO_CASE_PRINT, __VA_ARGS__)(A, F, NF, NL)
-#if DEBUG
+#if DEBUG_SUCCESS
 #define TO_CASE_PRINT_SUCCESS(A, F, NF, NL) case A: printf("[>] File %s line %d, in function %s: "STR(A)" (code error %d)\n", NF, NL, F, A); break;
 #else
 #define TO_CASE_PRINT_SUCCESS(A, F, NF, NL) case A: break;
@@ -26,7 +26,7 @@
 #define TO_CASE_PRINT_(A, F, NF, NL)        case A: printf("[!] File %s line %d, in function %s: "STR(A)" (code error %d)\n", NF, NL, F, A); break;
 
 #if DEBUG
-#define PRINT(F, ...) printf("[?] " F " in file %s line %d\n", __VA_ARGS__, __FILE__, __LINE__);
+#define PRINT(F, ...) printf("[?] " F " \t\t in file %s line %d\n", __VA_ARGS__, __FILE__, __LINE__);
 #else
 #define PRINT(F, ...)
 #endif

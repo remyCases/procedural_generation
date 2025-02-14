@@ -31,7 +31,7 @@ static int choose_shaders_path(data_t* data, const char** vertex_path, const cha
         break;
     
     case IMAGE:
-        *fragment_path = "shaders/fragment_postprocessing.glsl";
+        *fragment_path = "shaders/fragment_postprocessing.frag";
         *vertex_path = "shaders/vertex_postprocessing.glsl";
         break;
 
@@ -125,7 +125,7 @@ int create_shader_program(data_t* data)
     GLuint vertex_shader;
     GLuint fragment_shader;
     CHECK_CALL(create_shader, vertex_shader_path, GL_VERTEX_SHADER, &vertex_shader);
-    CHECK_CALL(create_shader, fragment_shader_path, GL_FRAGMENT_SHADER, &fragment_shader);
+    CHECK_CALL(create_shader_fragment, fragment_shader_path, &fragment_shader);
     
     // Create shader program
     GLuint shader_program = glCreateProgram();
