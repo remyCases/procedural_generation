@@ -20,12 +20,13 @@ void main()
     
     // Apply effects in sequence
     vec3 result = color.rgb;
+    vec3 neighbor_color = textureOffset(source_texture, TexCoord, ivec2(1, 1)).rgb;
     
     // quantize
     result = apply_quantization(result, quantization_method, quantization_levels);
 
     // dithering
-    result.rgb += apply_dithering(gl_FragCoord.xy, dithering_pattern, dithering_strength);
+    result = apply_dithering(gl_FragCoord.xy, result, neighbor_color, dithering_pattern, dithering_strength);
     
     FragColor = vec4(result, color.a);
 }

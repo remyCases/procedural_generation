@@ -89,7 +89,7 @@ int display(GLFWwindow* window, int type, GLuint shader_program, GLuint VAO, GLu
             glUniform1i(glGetUniformLocation(shader_program, "dithering_pattern"), 0);
             glUniform1f(glGetUniformLocation(shader_program, "dithering_strength"), 1.0);
             glUniform1i(glGetUniformLocation(shader_program, "quantization_method"), 0);
-            glUniform1i(glGetUniformLocation(shader_program, "quantization_levels"), 8);
+            glUniform1i(glGetUniformLocation(shader_program, "quantization_levels"), 256);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture);
