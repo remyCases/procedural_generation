@@ -1,4 +1,7 @@
-// Fragment
+// Copyright (C) 2025 Rémy Cases
+// See LICENSE file for extended copyright information.
+// This file is part of procedural_generation project from https://github.com/remyCases/procedural_generation.
+
 #version 330 core
 out vec4 FragColor;
 
