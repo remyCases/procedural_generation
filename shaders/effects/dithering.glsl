@@ -1,3 +1,8 @@
+// Copyright (C) 2025 Rémy Cases
+// See LICENSE file for extended copyright information.
+// This file is part of procedural_generation project from https://github.com/remyCases/procedural_generation.
+
+// no version indication here it will be included and not used as its own
 
 // Convert RGB to perceived brightness
 float get_luminance(vec3 color) 
@@ -26,6 +31,18 @@ float hash(vec2 p)
     vec3 p3 = fract(vec3(p.xyx) * vec3(.1031, .1030, .0973));
     p3 += dot(p3, p3.yxz + 19.19);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+float error_diffusion(vec2 pos)
+{
+    // Simplified error diffusion using neighboring pixels
+    vec2 texel_size = 1.0 / textureSize(source_texture, 0);
+    float error = 0.0;
+    error += texture(source_texture, TexCoord + texel_size * vec2(1, 0)).r * 7.0/16.0;
+    error += texture(source_texture, TexCoord + texel_size * vec2(-1, 1)).r * 3.0/16.0;
+    error += texture(source_texture, TexCoord + texel_size * vec2(0, 1)).r * 5.0/16.0;
+    error += texture(source_texture, TexCoord + texel_size * vec2(1, 1)).r * 1.0/16.0;
+    return error;
 }
 
 vec3 apply_dithering(vec2 frag_coord, vec3 color, vec3 neighbor_color, int dithering_pattern, float strength) 
@@ -57,6 +74,11 @@ vec3 apply_dithering(vec2 frag_coord, vec3 color, vec3 neighbor_color, int dithe
     {
         // Random dithering
         dither = hash(frag_coord.xy);
+    }
+    else if (dithering_pattern == 4)
+    {
+        // Simplified error diffusion using neighboring pixels
+        dither = error_diffusion(frag_coord);
     }
     
     vec3 color_diff = abs(color - neighbor_color);
