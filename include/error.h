@@ -8,8 +8,6 @@
 #include <stdio.h>
 #include "utils_macro.h"
 
-typedef enum ERROR_PROCGEN ERROR_PROCGEN;
-
 // error enum
 #define MACRO_ERROR(X, ...)                     \
     X(PG_SUCCESS, __VA_ARGS__, SUCCESS)         \
@@ -26,7 +24,7 @@ typedef enum ERROR_PROCGEN ERROR_PROCGEN;
     X(PG_POINTER_NON_NULL, __VA_ARGS__)         \
     X(PG_OPERATION_ERROR, __VA_ARGS__)          \
     X(PG_FAIL, __VA_ARGS__)                     \
-    X(PG_UNKNWON_ERROR, __VA_ARGS__)            \
+    X(PG_UNKNOWN_ERROR, __VA_ARGS__)            \
 
 #define LOG_ON_ERR(F, ...) error_print(STR(F), __FILE__, __LINE__, F(__VA_ARGS__))
 #define CHECK_CALL(F, ...)                      \
@@ -41,10 +39,10 @@ typedef enum ERROR_PROCGEN ERROR_PROCGEN;
     last_status = LOG_ON_ERR(F, __VA_ARGS__);   \
     if (last_status) goto E;
 
-enum ERROR_PROCGEN 
+typedef enum ERROR_PROCGEN 
 {
     MACRO_ERROR(TO_ENUM)
-};
+} ERROR_PROCGEN;
 
 char* error_str(int status);
 int error_print(char* function_name, char* nfile, int nline, int status);

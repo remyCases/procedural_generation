@@ -24,24 +24,21 @@
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
-typedef enum GENERATION_TYPE GENERATION_TYPE;
-typedef enum PROCEDURAL_TYPE PROCEDURAL_TYPE;
-
 typedef struct image_s image_t;
 typedef struct state_s state_t;
 typedef struct data_s data_t;
 
-enum GENERATION_TYPE
+typedef enum GENERATION_TYPE
 {
     PROCEDURAL,
     IMAGE,
-};
+} GENERATION_TYPE;
 
-enum PROCEDURAL_TYPE
+typedef enum PROCEDURAL_TYPE
 {
     MANDELBROT,
     CANOPY,
-};
+} PROCEDURAL_TYPE;
 
 struct image_s
 {
