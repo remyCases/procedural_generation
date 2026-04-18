@@ -18,7 +18,6 @@ else
 endif
 
 PROJECT = procgen
-# Default values
 BUILD_TYPE ?= Release
 
 C_COMPILER ?= gcc
@@ -85,8 +84,18 @@ build_msan:
 	$(MAKE) build BUILD_TYPE=Debug SANITIZE=memory
 endif
 
+
+ifeq ($(DETECTED_OS),Windows)
 debug: clean build_debug
-	gdb -ex 'break main' -ex 'run $(VAR)' .\build\$(PROJECT).exe
+	gdb -ex 'break main' -ex 'run $(VAR)' .\build\$(PROJECT)
+else
+debug: clean build_debug
+	gdb -ex 'break main' -ex 'run $(VAR)' ./build/$(PROJECT)
+debug_asan: clean build_asan
+	gdb -ex 'break main' -ex 'run $(VAR)' ./build/$(PROJECT)
+debug_msan: clean build_msan
+	gdb -ex 'break main' -ex 'run $(VAR)' ./build/$(PROJECT)
+endif
 
 run: clean build_release
 	.\build\$(PROJECT).exe $(VAR)
