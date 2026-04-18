@@ -7,6 +7,9 @@
 
 #define UNREFERENCED_PARAMETER(P) (void)(P)
 
+#define STATIC_ASSERT(predicate) \
+    typedef char CAT_UND(assertion_failed, __LINE__)[2*!!(predicate)-1];
+
 // usefull macros
 #define STR(A)                          #A
 #define CAT(A, B)                       A ## B
