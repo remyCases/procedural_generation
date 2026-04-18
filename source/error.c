@@ -9,7 +9,7 @@ char* error_str(int status)
     switch(status) 
     {
         MACRO_ERROR(TO_CASE_STR)
-        default: return "";
+        default: return "UNKNOWN ERROR";
     }
 }
 
@@ -18,7 +18,7 @@ int error_print(char* function_name, char* nfile, int nline, int status)
     switch(status) 
     {
         MACRO_ERROR(TO_CASE_PRINT, function_name, nfile, nline)
-        default:;
+        default: printf("[!] File %s line %d, in function %s: UNKNOWN ERROR (code error %d)\n", nfile, nline, function_name, status);
     }
 
     return status;

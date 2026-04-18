@@ -145,11 +145,11 @@ int create_shader_program(data_t* data)
     // Add debug prints here
     GLint pos_attrib = glGetAttribLocation(shader_program, "aPos");
     GLint tex_attrib = glGetAttribLocation(shader_program, "aTexCoord");
-    PRINT("Position attribute location: %d\n", pos_attrib);
-    PRINT("TexCoord attribute location: %d\n", tex_attrib);
+    PRINT("Position attribute location: %d", pos_attrib);
+    PRINT("TexCoord attribute location: %d", tex_attrib);
 
     GLint tex_uniform = glGetUniformLocation(shader_program, "texture1");
-    PRINT("Texture uniform location: %d\n", tex_uniform);
+    PRINT("Texture uniform location: %d", tex_uniform);
 
     data->shader_program = shader_program;
 
