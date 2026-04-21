@@ -7,8 +7,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
-static int read_file(const char* filename, const char** buf) 
+static int get_file_size(const char* filename, size_t* size)
 {
     int last_status = PG_SUCCESS;
 
@@ -17,12 +18,31 @@ static int read_file(const char* filename, const char** buf)
     {
         return PG_ACCESS_DENIED;
     }
-    
+
     // Get file size
     fseek(file, 0, SEEK_END);
-    size_t size = ftell(file);
-    fseek(file, 0, SEEK_SET);
+    *size = ftell(file);
+    fclose(file);
+
+    return last_status;
+}
+
+static int read_file(const char* filename, const char** buf) 
+{
+    int last_status = PG_SUCCESS;
+
+    PRINT("Trying opening %s", filename);
     
+    // Get file size
+    size_t size = 0;
+    CHECK_CALL(get_file_size, filename, &size);
+    
+    FILE* file = fopen(filename, "rb");
+    if (!file) 
+    {
+        return PG_ACCESS_DENIED;
+    }
+
     // Read file content
     char* content = (char*)malloc(size + 1);
     if (!content)
@@ -32,8 +52,6 @@ static int read_file(const char* filename, const char** buf)
 
     fread(content, 1, size, file);
     content[size] = '\0';
-    
-    PRINT("READ\n%s\n\n", content);
     fclose(file);
 
     *buf = content;
@@ -43,52 +61,99 @@ static int read_file(const char* filename, const char** buf)
 }
 
 // Very basic include processing
-static int process_includes(const char* base_path, const char* shader_source, char** buf) 
+// NOTE: Currently searches all base_paths sequentially and breaks on first success.
+// Do not reuse with complex/multiple includes
+static int process_includes(const char* base_path[], int base_path_size, const char* shader_source, char** buf) 
 {
     int last_status = PG_SUCCESS;
 
+    const char* shader_start = shader_source;
+    PRINT("Shader script\t %llu", strlen(shader_source));
     char* result = strdup(shader_source);
+
     const char* included_content = NULL;
+    size_t content_size = 0;
+    size_t total_added_size = 0;
+    size_t total_deleted_size = 0;
     char* include_start = NULL;
-    char* new_result = NULL;
+
+    if ((include_start = strstr(shader_start, "#include"))) 
+    {
+        result[include_start - shader_start] = '\0';
+    }
+    else
+    {
+        *buf = result;
+        return last_status;
+    }
+
+    PRINT("Shader header\t %llu", strlen(result));
+    char* quote_start = NULL;
+    char* quote_end = NULL;
     
-    while ((include_start = strstr(result, "#include"))) 
+    while ((include_start = strstr(shader_start, "#include")))
     {
         char filename[256];
-        char* quote_start = strchr(include_start, '"');
-        char* quote_end = strchr(quote_start + 1, '"');
+        content_size = 0;
+    
+        quote_start = strchr(include_start, '"');
+        quote_end = strchr(quote_start + 1, '"');
+        size_t filename_size = quote_end - quote_start - 1;
+        total_deleted_size += quote_end - include_start;
         
         // Extract filename
-        strncpy(filename, quote_start + 1, quote_end - quote_start - 1);
-        filename[quote_end - quote_start - 1] = '\0';
+        strncpy(filename, quote_start + 1, filename_size);
+        filename[filename_size] = '\0';
         
         // Build full path
         char full_path[512];
-        snprintf(full_path, sizeof(full_path), "%s/%s", base_path, filename);
-        
-        // Read included file
-        CHECK_CALL_GOTO_ERROR(read_file, cleanup, full_path, &included_content);
-        
-        // Replace include directive with file content
-        new_result = (char*)malloc(strlen(result) + strlen(included_content) + 1);
-        if (!new_result)
+
+        // amongst all base_path, find the included file
+        for (int i = 0; i < base_path_size; i++)
+        {
+            snprintf(full_path, sizeof(full_path), "%s/%s", base_path[i], filename);
+
+            FILE* file = fopen(full_path, "rb");
+            if (!file) continue;
+            fclose(file);
+
+            PRINT("Find file %s", full_path);
+
+            // Read included file
+            CHECK_CALL_GOTO_ERROR(get_file_size, cleanup, full_path, &content_size);
+            total_added_size += content_size;
+            CHECK_CALL_GOTO_ERROR(read_file, cleanup, full_path, &included_content);
+
+            if (last_status == PG_SUCCESS) 
+            {
+                break;
+            }
+        }
+
+        PRINT("Shader subscript\t %llu", content_size);
+        result = (char*)realloc(result, strlen(result) + content_size + 1);
+        if (!result)
         {
             return PG_ALLOCATION_ERROR;
         }
 
-        strncpy(new_result, result, include_start - result);
-        PRINT("1\n%s\n\n", new_result);
-        strcpy(new_result + (include_start - result), included_content);
-        PRINT("2\n%s\n\n", new_result);
-        strcat(new_result, quote_end + 1);
-        PRINT("3\n%s\n\n", new_result);
-        
-        free((void*)included_content);
-        included_content = NULL;
-        free(result);
-        result = new_result;
+        strncat(result, included_content, content_size);
+        PRINT("Current file\t %llu", strlen(result));
 
+        shader_start = quote_end;
     }
+
+    PRINT("Shader program\t %llu", strlen(shader_start));
+    PRINT("Shader with included subscript %llu", strlen(result) + strlen(shader_start));
+    PRINT("Expected size\t %llu", total_added_size + strlen(shader_source) - total_deleted_size);
+
+    assert(strlen(result) + strlen(shader_start) == total_added_size + strlen(shader_source) - total_deleted_size);
+    result = (char*)realloc(result, strlen(result) + strlen(shader_start));
+    if (!result)
+    {
+        return PG_ALLOCATION_ERROR;
+    }
+    strncat(result, shader_start + 1, strlen(shader_start));
     
     *buf = result;
 
@@ -102,10 +167,11 @@ int create_shader_fragment(const char* frag_path, GLuint* fragment_shader)
 {
     int last_status = PG_SUCCESS;
     const char* shader_file = NULL;
+    const char* base_paths[2] = {"shaders/effects", "shaders/utils"};
     char* processed_shader = NULL;
 
     CHECK_CALL(read_file, frag_path, &shader_file);
-    CHECK_CALL(process_includes, "shaders/effects", shader_file, &processed_shader);
+    CHECK_CALL(process_includes, base_paths, 2, shader_file, &processed_shader);
 
     // Now use processed_shader with glShaderSource
     GLuint shader = glCreateShader(GL_FRAGMENT_SHADER);
