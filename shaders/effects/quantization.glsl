@@ -1,3 +1,8 @@
+// Copyright (C) 2025 Rémy Cases
+// See LICENSE file for extended copyright information.
+// This file is part of procedural_generation project from https://github.com/remyCases/procedural_generation.
+
+// no version indication here it will be included and not used as its own
 
 // Linear quantization
 vec3 quantize_linear(vec3 color, int quantization_levels) 
@@ -19,12 +24,11 @@ vec3 quantize_gamma(vec3 color, int quantization_levels)
 // Perceptual quantization using luminance-based weights
 vec3 quantize_perceptual(vec3 color, int quantization_levels) 
 {
-    vec3 weights = vec3(0.299, 0.587, 0.114); // RGB to luminance weights
+    vec3 weights = vec3(0.299, 0.587, 0.114);
     float luma = dot(color, weights);
     float steps = float(quantization_levels - 1);
     
-    // Adjust quantization based on luminance
-    float adjustment = 1.0 + (luma * 0.5); // More levels in brighter areas
+    float adjustment = 1.0 + (luma * 0.5);
     vec3 adjusted = floor(color * steps * adjustment + 0.5) / (steps * adjustment);
     
     return adjusted;
@@ -32,7 +36,6 @@ vec3 quantize_perceptual(vec3 color, int quantization_levels)
 
 vec3 apply_quantization(vec3 color, int quantization_method, int quantization_levels) 
 {
-    // Apply quantization based on selected method
     if (quantization_method == 0) 
     {
         color.rgb = quantize_linear(color.rgb, quantization_levels);

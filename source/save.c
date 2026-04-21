@@ -76,7 +76,8 @@ int save_png(const char* filename, data_t* data)
     int h = data->state.height;
     uint8_t* pixels = (uint8_t*)malloc(sizeof(uint8_t)*(w * h * 3));
     // copy pixels from screen
-    //glBindTexture(GL_TEXTURE_2D, screenTex);
+    
+    glEnable(GL_FRAMEBUFFER_SRGB);
     glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, w, h);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
     glReadPixels(0, 0, w, h, GL_RGB, GL_UNSIGNED_BYTE, (GLvoid*)pixels);

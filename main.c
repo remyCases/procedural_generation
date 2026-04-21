@@ -1,3 +1,7 @@
+// Copyright (C) 2025 Rémy Cases
+// See LICENSE file for extended copyright information.
+// This file is part of procedural_generation project from https://github.com/remyCases/procedural_generation.
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <png.h>
@@ -87,9 +91,9 @@ int display(GLFWwindow* window, int type, GLuint shader_program, GLuint VAO, GLu
             
             glUniform1i(glGetUniformLocation(shader_program, "source_texture"), 0);
             glUniform1i(glGetUniformLocation(shader_program, "dithering_pattern"), 0);
-            glUniform1f(glGetUniformLocation(shader_program, "dithering_strength"), 1.0);
-            glUniform1i(glGetUniformLocation(shader_program, "quantization_method"), 0);
-            glUniform1i(glGetUniformLocation(shader_program, "quantization_levels"), 256);
+            glUniform1f(glGetUniformLocation(shader_program, "dithering_strength"), 0.2);
+            glUniform1i(glGetUniformLocation(shader_program, "quantization_method"), 2);
+            glUniform1i(glGetUniformLocation(shader_program, "quantization_levels"), 8);
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texture);
@@ -117,7 +121,7 @@ int main(int argc, char** argv)
     // init data
     data_t data = { 0 };
     CHECK_CALL_GOTO_ERROR(parse_args, cleanup, argc, argv, &data);
-    CHECK_CALL(init, HEIGHT, WIDTH, &data);
+    CHECK_CALL_GOTO_ERROR(init, cleanup, HEIGHT, WIDTH, &data);
 
     // Create and use shader program
     CHECK_CALL_GOTO_ERROR(create_shader_program, cleanup, &data)
