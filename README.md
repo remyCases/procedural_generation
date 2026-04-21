@@ -21,24 +21,35 @@ The following tools are required to build the project:
 
 ### Clone and Build
 
-1. Clone the repository:
+1.Clone the repository:
+
 ```bash
 git clone git@github.com:remyCases/procedural_generation.git
 cd procedural_generation
 ```
 
-2. Build using make:
+2.Build using make:
+
 ```bash
 make build_release
 ```
 
-3. For testing, you can run with a specific file:
-```bash
-make run VAR=name
-```
-
 ### Displaying a specific element
 
-> mandelbrot
+#### Mandelbrot Fractal
 
-> canopy
+```bash
+make run "VAR=mandelbrot"
+```
+
+#### Canopy Fractal
+
+```bash
+make run "VAR=canopy"
+```
+
+#### Effect on image
+
+```bash
+make run "VAR=file PATH"
+```
